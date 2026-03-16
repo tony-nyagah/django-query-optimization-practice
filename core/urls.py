@@ -1,3 +1,4 @@
+import debug_toolbar
 from django.contrib import admin
 from django.urls import include, path
 from rest_framework.response import Response
@@ -19,13 +20,19 @@ class APIRootView(APIView):
         return Response(
             {
                 "users": reverse("users-list", request=request),
+                "books": {
+                    "unoptimized": reverse("unoptimized-books-list", request=request),
+                    "optimized": reverse("optimized-books-list", request=request),
+                },
             }
         )
 
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("__debug__/", include(debug_toolbar.urls)),
     path("api/", APIRootView.as_view(), name="api-root"),
     path("api/", include("users.urls")),
+    path("api/", include("books.urls")),
     path("api-auth/", include("rest_framework.urls")),
 ]
