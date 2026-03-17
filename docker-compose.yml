@@ -37,7 +37,7 @@ services:
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
       UV_PROJECT_ENVIRONMENT: /venv
-      ALLOWED_HOSTS: "localhost,127.0.0.1"
+      ALLOWED_HOSTS: "localhost,127.0.0.1,.nyagah.me"
     depends_on:
       db:
         condition: service_healthy
