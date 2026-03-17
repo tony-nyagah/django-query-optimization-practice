@@ -24,12 +24,12 @@ services:
     build: .
     command: >
       sh -c "uv run manage.py migrate &&
-             uv run manage.py runserver 0.0.0.0:8000"
+             uv run manage.py runserver 0.0.0.0:1759"
     volumes:
       - .:/app
       - /app/.venv
     ports:
-      - "8000:8000"
+      - "1759:1759"
     environment:
       POSTGRES_DB: django_query_optimization
       POSTGRES_USER: postgres
