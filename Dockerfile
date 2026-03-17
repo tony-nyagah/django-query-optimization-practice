@@ -19,6 +19,9 @@ RUN uv sync --frozen --no-dev
 # Copy project
 COPY . .
 
+# Collect static files
+RUN uv run manage.py collectstatic --noinput
+
 EXPOSE 1759
 
-CMD ["uv", "run", "manage.py", "runserver", "0.0.0.0:1759"]
+CMD ["uv", "run", "--", "gunicorn", "core.wsgi:application", "--bind", "0.0.0.0:1759", "--workers", "2", "--timeout", "120"]
