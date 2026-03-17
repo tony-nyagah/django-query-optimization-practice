@@ -36,9 +36,32 @@ LANGUAGES = ["English", "French", "Spanish", "German", "Portuguese", "Italian"]
 
 
 class Command(BaseCommand):
-    help = "Seeds the database with publishers, authors, genres, and 5000 books"
+    help = "Seeds the database with publishers, authors, genres, and books"
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--books",
+            type=int,
+            default=5000,
+            help="Number of books to create (default: 5000)",
+        )
+        parser.add_argument(
+            "--authors",
+            type=int,
+            default=300,
+            help="Number of authors to create (default: 300)",
+        )
+        parser.add_argument(
+            "--publishers",
+            type=int,
+            default=100,
+            help="Number of publishers to create (default: 100)",
+        )
 
     def handle(self, *args, **options):
+        self.num_books = options["books"]
+        self.num_authors = options["authors"]
+        self.num_publishers = options["publishers"]
         self.seed_genres()
         self.seed_publishers()
         self.seed_authors()
@@ -63,7 +86,7 @@ class Command(BaseCommand):
         publishers = []
         existing = set(Publisher.objects.values_list("name", flat=True))
 
-        while len(publishers) < 100:
+        while len(publishers) < self.num_publishers:
             name = f"{person.last_name()} {random.choice(['Publishing', 'Press', 'Books', 'Media', 'House'])}"
             if name in existing:
                 continue
@@ -84,7 +107,7 @@ class Command(BaseCommand):
         authors = []
         existing = set(Author.objects.values_list("first_name", "last_name"))
 
-        while len(authors) < 300:
+        while len(authors) < self.num_authors:
             first_name = person.first_name()
             last_name = person.last_name()
             if (first_name, last_name) in existing:
@@ -115,7 +138,7 @@ class Command(BaseCommand):
         existing_isbns = set(Book.objects.values_list("isbn", flat=True))
         books = []
 
-        while len(books) < 5000:
+        while len(books) < self.num_books:
             isbn = str(random.randint(1000000000000, 9999999999999))
             if isbn in existing_isbns:
                 continue

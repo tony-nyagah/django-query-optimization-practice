@@ -11,6 +11,7 @@ dependencies = [
     "djangorestframework>=3.16.1",
     "markdown>=3.10.2",
     "mimesis>=19.1.0",
+    "psycopg2-binary>=2.9.11",
     "pygments>=2.19.2",
 ]
 

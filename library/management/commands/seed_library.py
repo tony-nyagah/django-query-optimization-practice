@@ -25,7 +25,23 @@ READING_LIST_NAMES = [
 class Command(BaseCommand):
     help = "Seeds the database with reviews, reading lists, and borrow records"
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--reviews-per-user",
+            type=int,
+            default=10,
+            help="Max number of reviews per user (default: 10)",
+        )
+        parser.add_argument(
+            "--borrows-per-user",
+            type=int,
+            default=10,
+            help="Max number of borrow records per user (default: 10)",
+        )
+
     def handle(self, *args, **options):
+        self.max_reviews = options["reviews_per_user"]
+        self.max_borrows = options["borrows_per_user"]
         users = list(User.objects.all())
         books = list(Book.objects.all())
 
@@ -37,16 +53,16 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR("No books found. Run seed_books first."))
             return
 
-        self.seed_reviews(users, books)
+        self.seed_reviews(users, books, self.max_reviews)
         self.seed_reading_lists(users, books)
-        self.seed_borrow_records(users, books)
+        self.seed_borrow_records(users, books, self.max_borrows)
 
-    def seed_reviews(self, users, books):
+    def seed_reviews(self, users, books, max_reviews):
         existing = set(Review.objects.values_list("user_id", "book_id"))
         reviews = []
 
         for user in users:
-            num_reviews = random.randint(1, 10)
+            num_reviews = random.randint(1, max_reviews)
             sampled_books = random.sample(books, k=min(num_reviews, len(books)))
             for book in sampled_books:
                 if (user.id, book.id) in existing:
@@ -111,12 +127,12 @@ class Command(BaseCommand):
         self.stdout.write(f"  ReadingLists: {reading_lists_created} created.")
         self.stdout.write(f"  ReadingListEntries: {entries_created} created.")
 
-    def seed_borrow_records(self, users, books):
+    def seed_borrow_records(self, users, books, max_borrows):
         now = timezone.now()
         records = []
 
         for user in users:
-            num_borrows = random.randint(1, 10)
+            num_borrows = random.randint(1, max_borrows)
             sampled_books = random.sample(books, k=min(num_borrows, len(books)))
 
             for book in sampled_books:

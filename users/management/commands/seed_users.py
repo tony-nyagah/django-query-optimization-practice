@@ -8,15 +8,24 @@ BATCH_SIZE = 100
 
 
 class Command(BaseCommand):
-    help = "Seeds the database with 1000 dummy users"
+    help = "Seeds the database with dummy users"
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--count",
+            type=int,
+            default=1000,
+            help="Number of users to create (default: 1000)",
+        )
 
     def handle(self, *args, **options):
+        count = options["count"]
         person = Person(Locale.EN)
 
         existing_emails = set(User.objects.values_list("email", flat=True))
         users = []
 
-        while len(users) < 1000:
+        while len(users) < count:
             email = person.email()
             if email in existing_emails:
                 continue
@@ -33,4 +42,4 @@ class Command(BaseCommand):
 
         User.objects.bulk_create(users, batch_size=BATCH_SIZE)
 
-        self.stdout.write(self.style.SUCCESS("Successfully seeded 1000 users."))
+        self.stdout.write(self.style.SUCCESS(f"Successfully seeded {count} users."))
