@@ -7,8 +7,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Install uv
+# Install uv and PostgreSQL client
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+RUN apt-get update && apt-get install -y --no-install-recommends postgresql-client && rm -rf /var/lib/apt/lists/*
 
 # Copy dependency files first for better layer caching
 COPY pyproject.toml uv.lock ./
