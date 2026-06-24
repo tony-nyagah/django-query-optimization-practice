@@ -1,6 +1,5 @@
 services:
   db:
-    container_name: postgres_db
     image: postgres:17-alpine
     restart: always
     environment:
@@ -10,26 +9,31 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - 5432:5432
+      - "5433:5432"       # Host port 5433 to avoid conflicts with other PG instances
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
-    networks:
-      - app_network
 
   web:
-    container_name: django_web
     build: .
     command: >
-      sh -c "uv run manage.py migrate &&
-             uv run -- gunicorn core.wsgi:application --bind 0.0.0.0:1759 --workers 2 --timeout 120"
+      sh -c "
+        echo 'Waiting for database...' &&
+        until pg_isready -h db -p 5432 -U postgres 2>/dev/null; do
+          sleep 1
+        done &&
+        echo 'Running migrations...' &&
+        uv run manage.py migrate &&
+        echo 'Starting server...' &&
+        uv run -- gunicorn core.wsgi:application --bind 0.0.0.0:1759 --workers 2 --timeout 120
+      "
     volumes:
       - .:/app
       - /app/.venv
     ports:
-      - 1759:1759
+      - "1759:1759"
     environment:
       POSTGRES_DB: django_query_optimization
       POSTGRES_USER: postgres
@@ -42,12 +46,6 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    networks:
-      - app_network
-
-networks:
-  app_network:
-    driver: bridge
 
 volumes:
   postgres_data:
