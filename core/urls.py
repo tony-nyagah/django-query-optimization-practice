@@ -19,10 +19,33 @@ class APIRootView(APIView):
     def get(self, request):
         return Response(
             {
-                "users": reverse("users-list", request=request),
+                "users": {
+                    "unoptimized": reverse(
+                        "unoptimized-users-list", request=request
+                    ),
+                    "optimized": reverse(
+                        "optimized-users-list", request=request
+                    ),
+                },
                 "books": {
                     "unoptimized": reverse("unoptimized-books-list", request=request),
                     "optimized": reverse("optimized-books-list", request=request),
+                    "latest_review": {
+                        "unoptimized": reverse(
+                            "unoptimized-books-latest-review-list", request=request
+                        ),
+                        "optimized": reverse(
+                            "optimized-books-latest-review-list", request=request
+                        ),
+                    },
+                    "borrowed": {
+                        "unoptimized": reverse(
+                            "unoptimized-books-borrowed-list", request=request
+                        ),
+                        "optimized": reverse(
+                            "optimized-books-borrowed-list", request=request
+                        ),
+                    },
                 },
                 "reviews": {
                     "unoptimized": reverse("unoptimized-reviews-list", request=request),

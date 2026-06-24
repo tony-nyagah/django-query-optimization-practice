@@ -84,16 +84,29 @@ WSGI_APPLICATION = "core.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("POSTGRES_DB", "django_query_optimization"),
-        "USER": os.environ.get("POSTGRES_USER", "postgres"),
-        "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "postgres"),
-        "HOST": os.environ.get("POSTGRES_HOST", "localhost"),
-        "PORT": os.environ.get("POSTGRES_PORT", "5432"),
+# Use SQLite when no PostgreSQL is available (e.g., CI, quick local dev).
+# Set USE_SQLITE=1 or run without a PG host to fall back automatically.
+_use_sqlite = os.environ.get("USE_SQLITE", "") == "1"
+_pg_host = os.environ.get("POSTGRES_HOST", "localhost")
+
+if _use_sqlite or not _pg_host:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.environ.get("POSTGRES_DB", "django_query_optimization"),
+            "USER": os.environ.get("POSTGRES_USER", "postgres"),
+            "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "postgres"),
+            "HOST": os.environ.get("POSTGRES_HOST", "localhost"),
+            "PORT": os.environ.get("POSTGRES_PORT", "5432"),
+        }
+    }
 
 
 # Password validation
@@ -143,3 +156,15 @@ AUTH_USER_MODEL = "users.User"
 INTERNAL_IPS = [
     "127.0.0.1",
 ]
+
+
+def show_toolbar(request):
+    """Always show debug toolbar in development. Docker containers
+    won't match INTERNAL_IPS, so this is simpler and correct for
+    a dev-only teaching project."""
+    return DEBUG
+
+
+DEBUG_TOOLBAR_CONFIG = {
+    "SHOW_TOOLBAR_CALLBACK": "core.settings.show_toolbar",
+}

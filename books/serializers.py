@@ -103,3 +103,84 @@ class OptimizedBookSerializer(serializers.ModelSerializer):
             "language",
             "average_rating",
         ]
+
+
+# ---------------------------------------------------------------------------
+# Subquery technique: annotate each book with its latest review
+# ---------------------------------------------------------------------------
+
+
+
+class UnoptimizedBookWithLatestReviewSerializer(serializers.ModelSerializer):
+    """
+    Naive approach: uses SerializerMethodField to fetch the latest review
+    per book in Python. Fires a separate query per book.
+
+    For N books: 1 query + N queries = N+1.
+    """
+
+    latest_review_body = serializers.SerializerMethodField()
+    latest_review_rating = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Book
+        fields = ["id", "title", "latest_review_body", "latest_review_rating"]
+
+    def get_latest_review_body(self, obj):
+        review = obj.reviews.order_by("-created_at").first()
+        return review.body if review else None
+
+    def get_latest_review_rating(self, obj):
+        review = obj.reviews.order_by("-created_at").first()
+        return review.rating if review else None
+
+
+class OptimizedBookWithLatestReviewSerializer(serializers.ModelSerializer):
+    """
+    Optimized approach: the queryset annotates each book with
+    latest_review_body and latest_review_rating via Subquery.
+    The serializer reads these annotated fields — zero extra queries.
+    """
+
+    latest_review_body = serializers.CharField(read_only=True)
+    latest_review_rating = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Book
+        fields = ["id", "title", "latest_review_body", "latest_review_rating"]
+
+
+# ---------------------------------------------------------------------------
+# Exists technique: filter books that have active borrows
+# ---------------------------------------------------------------------------
+
+
+class UnoptimizedBookBorrowedSerializer(serializers.ModelSerializer):
+    """
+    Naive approach: SerializerMethodField checks borrow_records per book.
+    Fires a query per book to check if it has active borrows.
+
+    For N books: 1 query + N queries = N+1.
+    """
+
+    has_active_borrows = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Book
+        fields = ["id", "title", "isbn", "has_active_borrows"]
+
+    def get_has_active_borrows(self, obj):
+        return obj.borrow_records.filter(returned_at__isnull=True).exists()
+
+
+class OptimizedBookBorrowedSerializer(serializers.ModelSerializer):
+    """
+    Optimized approach: the queryset annotates each book with an Exists
+    subquery. The serializer reads the boolean — zero extra queries.
+    """
+
+    has_active_borrows = serializers.BooleanField()
+
+    class Meta:
+        model = Book
+        fields = ["id", "title", "isbn", "has_active_borrows"]

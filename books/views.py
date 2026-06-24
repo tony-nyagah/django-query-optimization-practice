@@ -1,9 +1,17 @@
-from django.db.models import Count, Prefetch
+from django.db.models import Count, Exists, OuterRef, Prefetch, Subquery
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 
+from library.models import BorrowRecord, Review
 from .models import Book, BookAuthor
-from .serializers import OptimizedBookSerializer, UnoptimizedBookSerializer
+from .serializers import (
+    OptimizedBookBorrowedSerializer,
+    OptimizedBookSerializer,
+    OptimizedBookWithLatestReviewSerializer,
+    UnoptimizedBookBorrowedSerializer,
+    UnoptimizedBookSerializer,
+    UnoptimizedBookWithLatestReviewSerializer,
+)
 
 
 class UnoptimizedBookViewSet(viewsets.ReadOnlyModelViewSet):
@@ -86,3 +94,97 @@ class OptimizedBookViewSet(viewsets.ReadOnlyModelViewSet):
                 "average_rating",
             )
         )
+
+
+# ---------------------------------------------------------------------------
+# Subquery: latest review per book
+# ---------------------------------------------------------------------------
+
+
+class UnoptimizedBookLatestReviewViewSet(viewsets.ReadOnlyModelViewSet):
+    """Unoptimized: fetches latest review per book via SerializerMethodField.
+
+    The serializer calls `obj.reviews.order_by('-created_at').first()` for
+    each book. That's a separate SQL query per book.
+
+    Total: N + 1 queries.
+    """
+
+    permission_classes = [IsAuthenticated]
+    serializer_class = UnoptimizedBookWithLatestReviewSerializer
+
+    def get_queryset(self):
+        return Book.objects.all()
+
+
+class OptimizedBookLatestReviewViewSet(viewsets.ReadOnlyModelViewSet):
+    """Optimized: annotates each book with its latest review via Subquery.
+
+    Subquery with OuterRef runs a single correlated subquery that fetches
+    the latest review data for all books in one SQL operation.
+
+    Total: 1 query (the subquery is embedded in the main query).
+    """
+
+    permission_classes = [IsAuthenticated]
+    serializer_class = OptimizedBookWithLatestReviewSerializer
+
+    def get_queryset(self):
+        latest_review = (
+            Review.objects.filter(book=OuterRef("pk"))
+            .order_by("-created_at")
+            .values("body")[:1]
+        )
+        latest_review_rating = (
+            Review.objects.filter(book=OuterRef("pk"))
+            .order_by("-created_at")
+            .values("rating")[:1]
+        )
+
+        return Book.objects.annotate(
+            latest_review_body=Subquery(latest_review),
+            latest_review_rating=Subquery(latest_review_rating),
+        ).only("id", "title")
+
+
+# ---------------------------------------------------------------------------
+# Exists: books with active borrows
+# ---------------------------------------------------------------------------
+
+
+class UnoptimizedBookBorrowedViewSet(viewsets.ReadOnlyModelViewSet):
+    """Unoptimized: checks `has_active_borrows` per book in Python.
+
+    The serializer calls `obj.borrow_records.filter(returned_at__isnull=True).exists()`
+    for each book — N extra EXISTS queries.
+
+    Total: N + 1 queries.
+    """
+
+    permission_classes = [IsAuthenticated]
+    serializer_class = UnoptimizedBookBorrowedSerializer
+
+    def get_queryset(self):
+        return Book.objects.all()
+
+
+class OptimizedBookBorrowedViewSet(viewsets.ReadOnlyModelViewSet):
+    """Optimized: annotates with Exists subquery.
+
+    Exists(OuterRef('pk')) embeds the EXISTS check directly in the main
+    SQL query. The database resolves it in one pass.
+
+    Total: 1 query.
+    """
+
+    permission_classes = [IsAuthenticated]
+    serializer_class = OptimizedBookBorrowedSerializer
+
+    def get_queryset(self):
+        has_active = BorrowRecord.objects.filter(
+            book=OuterRef("pk"),
+            returned_at__isnull=True,
+        )
+        return Book.objects.annotate(
+            has_active_borrows=Exists(has_active)
+        ).only("id", "title", "isbn")

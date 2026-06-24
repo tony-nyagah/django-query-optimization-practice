@@ -209,6 +209,71 @@ FROM books_book;
 
 ---
 
+### `Subquery`
+
+Embeds a correlated subquery in the main query to fetch related data without a separate query. Best when you need a single related value per row (e.g., the latest review for each book).
+
+```python
+# Bad — fires a query per book to get the latest review
+from library.models import Review
+
+for book in Book.objects.all():
+    latest = book.reviews.order_by("-created_at").first()  # N queries
+
+# Good — Subquery embeds the lookup in the main query
+from django.db.models import OuterRef, Subquery
+
+latest_body = Review.objects.filter(
+    book=OuterRef("pk")
+).order_by("-created_at").values("body")[:1]
+
+books = Book.objects.annotate(latest_review_body=Subquery(latest_body))
+```
+
+---
+
+### `Exists`
+
+Checks for the existence of related rows in SQL rather than Python. Best for filtering or annotating based on whether related data exists.
+
+```python
+# Bad — fires a query per book to check for active borrows
+for book in Book.objects.all():
+    has_active = book.borrow_records.filter(returned_at__isnull=True).exists()  # N queries
+
+# Good — Exists embeds the check in SQL
+from django.db.models import Exists, OuterRef
+from library.models import BorrowRecord
+
+has_active = BorrowRecord.objects.filter(
+    book=OuterRef("pk"),
+    returned_at__isnull=True,
+)
+books = Book.objects.annotate(has_active_borrows=Exists(has_active))
+```
+
+---
+
+### `bulk_create` / `bulk_update`
+
+Inserts or updates many rows in a single SQL statement instead of one per object. Massive speedup for seeding or batch operations.
+
+```python
+# Bad — one INSERT per book (5000 round-trips)
+for i in range(5000):
+    Book.objects.create(title=f"Book {i}", ...)  # 5000 queries
+
+# Good — single INSERT (1 round-trip)
+books = [Book(title=f"Book {i}", ...) for i in range(5000)]
+Book.objects.bulk_create(books, batch_size=1000)  # 5 queries (one per batch)
+```
+
+Run the benchmark yourself:
+
+```bash
+uv run manage.py seed_books_optimized --count 5000
+```
+
 ## Getting Started
 
 ### Requirements
@@ -261,10 +326,10 @@ Log in with your superuser credentials. Then open the unoptimized and optimized 
 
 ### Users
 
-| Endpoint | Description |
-|---|---|
-| `GET /api/users/` | List all users |
-| `GET /api/users/{id}/` | Retrieve a single user |
+| Endpoint | Technique | Description |
+|---|---|---|
+| `GET /api/users/unoptimized/` | — | N+1 on review_count, borrow_record_count, and reading_list_count via `SerializerMethodField` |
+| `GET /api/users/optimized/` | `annotate` | 1 query — all counts computed in SQL via `Count()` |
 
 ### Books
 
@@ -272,6 +337,10 @@ Log in with your superuser credentials. Then open the unoptimized and optimized 
 |---|---|---|
 | `GET /api/books/unoptimized/` | — | N+1 on publisher, authors, genres, and author count |
 | `GET /api/books/optimized/` | `select_related`, `prefetch_related`, `annotate`, `only` | 3 queries regardless of page size |
+| `GET /api/books/latest-review/unoptimized/` | — | N+1 fetching latest review per book via Python loop |
+| `GET /api/books/latest-review/optimized/` | `Subquery` | 1 query — latest review fetched in SQL subquery |
+| `GET /api/books/borrowed/unoptimized/` | — | N+1 checking active borrows per book in Python |
+| `GET /api/books/borrowed/optimized/` | `Exists` | 1 query — EXISTS check runs in SQL |
 
 ### Reviews
 
