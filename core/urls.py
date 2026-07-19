@@ -72,6 +72,7 @@ class APIRootView(APIView):
 
 
 urlpatterns = [
+    path("", include("frontend.urls")),
     path("admin/", admin.site.urls),
     path("__debug__/", include(debug_toolbar.urls)),
     path("api/", APIRootView.as_view(), name="api-root"),

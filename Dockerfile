@@ -23,6 +23,9 @@ COPY . .
 # Collect static files
 RUN uv run manage.py collectstatic --noinput
 
+# Ensure SQLite data directory exists
+RUN mkdir -p /app/data
+
 EXPOSE 1759
 
 CMD ["uv", "run", "--", "gunicorn", "core.wsgi:application", "--bind", "0.0.0.0:1759", "--workers", "2", "--timeout", "120"]

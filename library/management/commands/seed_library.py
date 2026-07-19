@@ -58,6 +58,8 @@ class Command(BaseCommand):
         self.seed_borrow_records(users, books, self.max_borrows)
 
     def seed_reviews(self, users, books, max_reviews):
+        if max_reviews <= 0:
+            return
         existing = set(Review.objects.values_list("user_id", "book_id"))
         reviews = []
 
@@ -128,6 +130,8 @@ class Command(BaseCommand):
         self.stdout.write(f"  ReadingListEntries: {entries_created} created.")
 
     def seed_borrow_records(self, users, books, max_borrows):
+        if max_borrows <= 0:
+            return
         now = timezone.now()
         records = []
 
