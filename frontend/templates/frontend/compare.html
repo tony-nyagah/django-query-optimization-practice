@@ -10,38 +10,38 @@
 {% if problem and fix %}
 <div class="explanation">
     <div class="explain-row">
-            <div class="explain-col">
-                <h3>🔴 The Problem</h3>
-                <p>{{ problem|safe }}</p>
-                {% if unoptimized_code %}
-                <pre><code>{{ unoptimized_code }}</code></pre>
-                {% endif %}
-            </div>
-            <div class="explain-col">
-                <h3>🟢 The Fix</h3>
-                <p>{{ fix|safe }}</p>
-                {% if optimized_code %}
-                <pre><code>{{ optimized_code }}</code></pre>
-                {% endif %}
-            </div>
+        <div class="explain-col">
+            <h3>Problem</h3>
+            <p>{{ problem|safe }}</p>
+            {% if unoptimized_code %}
+            <pre><code>{{ unoptimized_code }}</code></pre>
+            {% endif %}
         </div>
+        <div class="explain-col">
+            <h3>Fix</h3>
+            <p>{{ fix|safe }}</p>
+            {% if optimized_code %}
+            <pre><code>{{ optimized_code }}</code></pre>
+            {% endif %}
+        </div>
+    </div>
 </div>
 {% endif %}
 
 <div class="comparison">
-    <div class="panel unoptimized">
+    <div class="panel">
         <div class="panel-header">
-            <h2>❌ Unoptimized</h2>
+            <h2>Unoptimized</h2>
             <div class="stats">
                 <span class="stat queries">{{ unoptimized.queries }} queries</span>
                 <span class="stat time">{{ unoptimized.time_ms }} ms</span>
             </div>
         </div>
+        {% if unoptimized.queries > 10 %}
         <div class="n-plus-one">
-            {% if unoptimized.queries > 10 %}
-                🔥 <strong>N+1 problem detected!</strong> {{ unoptimized.queries }} queries for {{ unoptimized.data|length }} rows.
-            {% endif %}
+            N+1 detected: {{ unoptimized.queries }} queries for {{ unoptimized.data|length }} rows
         </div>
+        {% endif %}
         <table>
             <thead>
                 <tr>
@@ -62,9 +62,9 @@
         </table>
     </div>
 
-    <div class="panel optimized">
+    <div class="panel">
         <div class="panel-header">
-            <h2>✅ Optimized</h2>
+            <h2>Optimized</h2>
             <div class="stats">
                 <span class="stat queries">{{ optimized.queries }} queries</span>
                 <span class="stat time">{{ optimized.time_ms }} ms</span>
@@ -72,8 +72,8 @@
         </div>
         {% if unoptimized.queries > 0 and optimized.queries > 0 %}
         <div class="savings">
-            🎯 <strong>{{ unoptimized.queries }}</strong> → <strong>{{ optimized.queries }}</strong> queries
-            ({{ unoptimized.time_ms }}ms → {{ optimized.time_ms }}ms)
+            {{ unoptimized.queries }} queries reduced to {{ optimized.queries }}
+            ({{ unoptimized.time_ms }}ms to {{ optimized.time_ms }}ms)
         </div>
         {% endif %}
         <table>
@@ -97,5 +97,5 @@
     </div>
 </div>
 
-<p class="back"><a href="{% url 'home' %}">← Back to all queries</a></p>
+<p class="back"><a href="{% url 'home' %}">Back to all queries</a></p>
 {% endblock %}

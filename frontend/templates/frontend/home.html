@@ -4,47 +4,56 @@
 <section class="hero">
     <h1>Django ORM Query Optimization</h1>
     <p>
-        Click on any section below to see the <strong>unoptimized</strong> and
-        <strong>optimized</strong> versions of a Django ORM query, side by side.
-        Each panel shows exactly how many database queries were executed and how
-        long they took.
+        Side-by-side comparison of <strong>unoptimized</strong> and
+        <strong>optimized</strong> Django ORM queries. Each panel shows
+        exactly how many database queries ran and how long they took.
     </p>
     <p class="hint">
-        👉 The unoptimized versions suffer from the <strong>N+1 query problem</strong>.
+        The unoptimized versions suffer from the <strong>N+1 query problem</strong>.
         The optimized versions use <code>select_related</code>, <code>prefetch_related</code>,
         and <code>annotate</code> to slash query counts.
     </p>
 </section>
 
 <section class="cards">
-    <a href="{% url 'books' %}" class="card">
-        <span class="card-icon">📚</span>
-        <h2>Books</h2>
-        <p>Publisher, authors, genres — see <code>select_related</code>, <code>prefetch_related</code>, and <code>annotate</code> in action.</p>
+    <a href="{% url 'books' %}" class="card featured">
+        <span class="card-icon">&#128218;</span>
+        <div class="card-body">
+            <h2>Books</h2>
+            <p>Publisher, authors, genres. Demonstrates <code>select_related</code>, <code>prefetch_related</code>, and <code>annotate</code> together &mdash; the most dramatic optimization in the app.</p>
+        </div>
     </a>
 
     <a href="{% url 'reviews' %}" class="card">
-        <span class="card-icon">⭐</span>
-        <h2>Reviews</h2>
-        <p>Simple FK traversal on User and Book. Compare raw queries vs <code>select_related</code>.</p>
+        <span class="card-icon">&#11088;</span>
+        <div class="card-body">
+            <h2>Reviews</h2>
+            <p>ForeignKey traversal on User and Book. Compare raw queries against <code>select_related</code>.</p>
+        </div>
     </a>
 
     <a href="{% url 'reading_lists' %}" class="card">
-        <span class="card-icon">📋</span>
-        <h2>Reading Lists</h2>
-        <p>Nested prefetch with one-to-many entries. The deepest query problem in the app.</p>
+        <span class="card-icon">&#128203;</span>
+        <div class="card-body">
+            <h2>Reading Lists</h2>
+            <p>Nested prefetch across three models. The deepest N+1 cascade in the app.</p>
+        </div>
     </a>
 
     <a href="{% url 'borrow_records' %}" class="card">
-        <span class="card-icon">⏱️</span>
-        <h2>Borrow Records</h2>
-        <p>FK traversal with a computed <code>is_overdue</code> property. See <code>select_related</code> shine.</p>
+        <span class="card-icon">&#9201;</span>
+        <div class="card-body">
+            <h2>Borrow Records</h2>
+            <p>FK traversal with a computed <code>is_overdue</code> property. See <code>select_related</code> shine.</p>
+        </div>
     </a>
 
     <a href="{% url 'users' %}" class="card">
-        <span class="card-icon">👥</span>
-        <h2>Users</h2>
-        <p>Simple model listing. Count reviews per user with an N+1 pattern.</p>
+        <span class="card-icon">&#128101;</span>
+        <div class="card-body">
+            <h2>Users</h2>
+            <p>Counting reviews per user. The simplest N+1 pattern, fixed with one <code>annotate</code>.</p>
+        </div>
     </a>
 </section>
 {% endblock %}
