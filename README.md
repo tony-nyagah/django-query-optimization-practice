@@ -13,6 +13,9 @@ uv run manage.py migrate
 uv run manage.py seed_users    # 1000 users
 uv run manage.py seed_books    # 5000 books, 300 authors, 100 publishers
 uv run manage.py seed_library  # reviews, reading lists, borrow records
+
+uv run manage.py seed_all # seed all data
+
 uv run manage.py runserver
 ```
 
