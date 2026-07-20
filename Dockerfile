@@ -26,6 +26,9 @@ RUN uv run manage.py collectstatic --noinput
 # Ensure SQLite data directory exists
 RUN mkdir -p /app/data
 
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
 EXPOSE 1759
 
-CMD ["uv", "run", "--", "gunicorn", "core.wsgi:application", "--bind", "0.0.0.0:1759", "--workers", "2", "--timeout", "120"]
+ENTRYPOINT ["/app/entrypoint.sh"]
